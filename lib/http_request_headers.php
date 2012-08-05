@@ -15,7 +15,7 @@
       $this->options = array_merge($default, $options);
     }
 
-    public function __toString(){
+    private function generate(){
       $getdata_str  = (count($this->options['getdata']) ? '?' : '').$this->query_string($this->options['getdata']);
       $http_request = 'GET '.$this->options['uri'].$getdata_str.' HTTP/1.1'.$this->crlf;
       $http_request .= 'Host: '.$this->ip.':'.$this->options['port'].$this->crlf;
@@ -27,6 +27,10 @@
 
       $http_request .= $this->crlf;
       return $http_request;
+    }
+
+    public function __toString(){
+      return $this->generate();
     }
 
     private function query_string($params){
