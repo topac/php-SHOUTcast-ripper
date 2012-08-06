@@ -4,5 +4,9 @@
 
   require 'lib/ripper.php';
 
-  # TODO
+  $address = "fsolerio.primcast.com";
+  $port = 6178;
+
+  $ripper = new SHOUTcastRipper\Ripper($address, $port);
+  $ripper->start_ripping();
 ?>

@@ -5,107 +5,124 @@
   require 'reponse_header.php';
   require 'audio_file.php';
 
-  function handle_metadata($metadata){
-    echo "\nMETADATA IS: $metadata (".strlen($metadata).")";
-  }
+  class Ripper {
+    private $address, $port;
+    private $recv_bytes_count = 0;
+    private $http_response_headers = null;
+    private $next_metadata_index = null;
+    private $icy_metaint = null;
+    private $metadata = '';
+    private $remaining_meta = 0;
+    private $metadata_len = 0;
+    private $resp_header;
+    private $mp3;
+    private $socket;
 
-  $address = "fsolerio.primcast.com";
-  $port = 6178;
-
-  if (($fp = fsockopen($address, $port, $errno, $errstr)) == false)
-    die("Error $errno: $errstr\n");
-
-  $http_header_opts = array(
-    'port'           => $port,
-    'custom_headers' => array('Icy-MetaData' => 1)
-  );
-
-  $req = new Http\RequestHeaders($address, $http_header_opts);
-
-  fputs($fp, $req);
-
-  $mp3 = new AudioFile('/Users/topac/dev/php-SHOUTcast-ripper/tmp.mp3');
-
-  $recv_bytes_count = 0;
-  $http_response_headers = null;
-  $headers = '';
-  $next_metadata_index = null;
-  $icy_metaint = null;
-  $metadata = '';
-  $remaining_meta = 0;
-  $metadata_len = 0;
-
-  $resp_header = new ResponseHeader();
-
-  echo "[receiving]";
-
-  while ($buffer = fread($fp, 2048)) {
-
-    # Read headers and the icy-metaint value.
-    if (!$resp_header->is_complete()){
-      $resp_header->append_content($buffer);
+    public function __construct($address, $port){
+      $this->address = $address;
+      $this->port = $port;
     }
 
-    if ($resp_header->is_complete() && $next_metadata_index == null){
-      $icy_metaint = $resp_header->icy_metaint();
-      $next_metadata_index = $resp_header->icy_metaint();
-      $buffer = $resp_header->remove_tail_stream_data();
+    public function _destruct(){
+      if ($this->socket) fclose($this->socket);
     }
 
-    if ($next_metadata_index == null)
-      continue;
+    public function start_ripping(){
+      $this->send_http_request();
+      echo "[receiving]";
+      $this->resp_header = new ResponseHeader();
+      $this->mp3 = new AudioFile('/Users/topac/dev/php-SHOUTcast-ripper/tmp.mp3');
+      $this->start_recv_loop();
+    }
 
-    # At this point the respose headers has been stored and removed from the audio stream.
-    $buffer_len = strlen($buffer);
-    $recv_bytes_count += $buffer_len;
+    private function handle_metadata($metadata){
+      echo "\nMETADATA IS: $metadata (".strlen($metadata).")";
+    }
 
-    # There is still some metadata in the new buffer.
-    if ($remaining_meta > 0){
-      $remaining_meta_copy = $remaining_meta;
-      $metadata .= substr($buffer, 0, $remaining_meta);
-      $remaining_meta = $metadata_len - strlen($metadata);
-      if ($remaining_meta == 0) {
-        handle_metadata($metadata);
-        $mp3->write_buffer_skipping_metadata($buffer, 0, $remaining_meta_copy+1);
+    private function request_header(){
+      return new Http\RequestHeaders($this->address, array(
+        'port'           => $this->port,
+        'custom_headers' => array('Icy-MetaData' => 1)
+      ));
+    }
+
+    private function send_http_request(){
+      if (($this->socket = fsockopen($this->address, $this->port, $errno, $errstr)) == false)
+        throw new Exception("Error $errno: $errstr\n");
+      fputs($this->socket, $this->request_header());
+    }
+
+    private function start_recv_loop(){
+      while ($buffer = fread($this->socket, 38)) {
+        $this->handle_recv_data($buffer);
       }
     }
-    # A new metadata block has begun
-    else if ($icy_metaint && $recv_bytes_count > $next_metadata_index) {
-      $start = $buffer_len-($recv_bytes_count-$next_metadata_index);
-      $metadata_len = ord($buffer[$start])*16;
-      $end = $start+1+$metadata_len;
 
-      echo "\n=====================\nstart = $start";
-      echo "\nend = $end";
-      echo "\nmetadata_len = $metadata_len";
-      echo "\nbuf len = ".$buffer_len;
-      echo "\nnext metaint = $next_metadata_index";
-      echo "\nrecv_bytes_count = $recv_bytes_count";
 
-      # Metadata block is present.
-      if ($metadata_len > 0){
-        $metadata = ($start != $buffer_len) ? substr($buffer, $start+1, $metadata_len) : '';
-        $remaining_meta = $metadata_len - strlen($metadata);
-        $mp3->write_buffer_skipping_metadata($buffer, $start+1, $metadata_len+1);
-        if ($remaining_meta == 0){
-          handle_metadata($metadata);
+    private function handle_recv_data($buffer){
+      # Read headers and the icy-metaint value.
+      if (!$this->resp_header->is_complete()){
+        $this->resp_header->append_content($buffer);
+      }
+
+      if ($this->resp_header->is_complete() && $this->next_metadata_index == null){
+        $this->icy_metaint = $this->resp_header->icy_metaint();
+        $this->next_metadata_index = $this->resp_header->icy_metaint();
+        $buffer = $this->resp_header->remove_tail_stream_data();
+      }
+
+      if ($this->next_metadata_index == null)
+        return;
+
+      # At this point the respose headers has been stored and removed from the audio stream.
+      $buffer_len = strlen($buffer);
+      $this->recv_bytes_count += $buffer_len;
+
+      # There is still some metadata in the new buffer.
+      if ($this->remaining_meta > 0){
+        $remaining_meta_copy = $this->remaining_meta;
+        $this->metadata .= substr($buffer, 0, $this->remaining_meta);
+        $this->remaining_meta = $this->metadata_len - strlen($this->metadata);
+        if ($this->remaining_meta == 0) {
+          $this->handle_metadata($this->metadata);
+          $this->mp3->write_buffer_skipping_metadata($buffer, 0, $remaining_meta_copy+1);
         }
-      } else {
-        # Metadata block is not present.
-        $mp3->write_buffer_skipping_metadata($buffer, $start, 1);
-        $metadata = '';
-        $remaining_meta = 0;
       }
+      # A new metadata block has begun
+      else if ($this->icy_metaint && $this->recv_bytes_count > $this->next_metadata_index) {
+        $start = $buffer_len-($this->recv_bytes_count-$this->next_metadata_index);
+        $this->metadata_len = ord($buffer[$start])*16;
+        $end = $start+1+$this->metadata_len;
 
-      echo "\nremaining_meta = $remaining_meta";
-      $next_metadata_index = $next_metadata_index+$icy_metaint+$metadata_len+1;
+        echo "\n=====================\nstart = $start";
+        echo "\nend = $end";
+        echo "\nmetadata_len = $this->metadata_len";
+        echo "\nbuf len = ".$buffer_len;
+        echo "\nnext metaint = $this->next_metadata_index";
+        echo "\nrecv_bytes_count = $this->recv_bytes_count";
+
+        # Metadata block is present.
+        if ($this->metadata_len > 0){
+          $this->metadata = ($start != $buffer_len) ? substr($buffer, $start+1, $this->metadata_len) : '';
+          $this->remaining_meta = $this->metadata_len - strlen($this->metadata);
+          $this->mp3->write_buffer_skipping_metadata($buffer, $start+1, $this->metadata_len+1);
+          if ($this->remaining_meta == 0){
+            $this->handle_metadata($this->metadata);
+          }
+        } else {
+          # Metadata block is not present.
+          $this->mp3->write_buffer_skipping_metadata($buffer, $start, 1);
+          $this->metadata = '';
+          $this->remaining_meta = 0;
+        }
+
+        echo "\nremaining_meta = $this->remaining_meta";
+        $this->next_metadata_index = $this->next_metadata_index+$this->icy_metaint+$this->metadata_len+1;
+      }
+      # Buffers with only audio stream can be dumped directly.
+      else{
+        $this-> mp3->write_buffer($buffer);
+      }
     }
-    # Buffers with only audio stream can be dumped directly.
-    else{
-      $mp3->write_buffer($buffer);
-    }
-
-  } //end of infinite loop
-
-  fclose($fp);
+  }
 ?>
