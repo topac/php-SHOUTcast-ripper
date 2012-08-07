@@ -14,15 +14,16 @@
     private $icy_metaint = null;
     private $resp_header;
     private $mp3;
-    private $socket;
     private $metadata;
-    private $http_streaming;
 
     public function start($address, $port){
       $this->resp_header = new ResponseHeader();
       $this->mp3 = new AudioFile('/Users/topac/dev/php-SHOUTcast-ripper/tmp.mp3');
-      $this->http_streaming = new HttpStreaming();
-      $this->http_streaming->stream($address, $port, array($this, 'handle_recv_data'));
+
+      $http_streaming = new HttpStreaming($address, $port);
+      $http_streaming->open();
+      while ($buffer = $http_streaming->read())
+        $this->handle_recv_data($buffer);
     }
 
     private function metadata_block_completed($metadata){

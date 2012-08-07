@@ -7,28 +7,27 @@
     private $port;
     const BUFLEN = 30;
 
-    public function stream($address, $port, $callback){
+    public function __construct($address, $port){
       $this->address = $address;
       $this->port = $port;
-      $this->open();
-      $this->send_request();
-      $this->read($callback);
+    }
+
+    public function __destruct(){
       $this->close();
     }
 
-    private function close(){
-      if ($this->socket) fclose($this->socket);
-    }
-
-    private function read($callback){
-      while ($buffer = fread($this->socket, self::BUFLEN)) {
-        if (!call_user_func($callback, $buffer)) break;
-      }
-    }
-
-    private function open(){
+    public function open(){
       if (($this->socket = fsockopen($this->address, $this->port, $errno, $errstr)) == false)
         throw new Exception("Error opening socket to $address. [$errno] $errstr");
+      $this->send_request();
+    }
+
+    public function read(){
+      return fread($this->socket, self::BUFLEN);
+    }
+
+    public function close(){
+      if ($this->socket) fclose($this->socket);
     }
 
     private function send_request(){
