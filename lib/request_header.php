@@ -1,7 +1,7 @@
 <?php
-  namespace SHOUTcastRipper\Http;
+  namespace SHOUTcastRipper;
 
-  class RequestHeaders {
+  class RequestHeader {
     private $ip, $options, $crlf = "\r\n";
 
     public function __construct($ip, $options=array()){

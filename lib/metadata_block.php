@@ -14,7 +14,7 @@
       return $this->expected_length;
     }
 
-    public function append_content($data) {
+    public function write_buffer($data) {
       $this->content .= $data;
     }
 
