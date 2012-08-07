@@ -9,7 +9,6 @@
 
   class Ripper {
     private $recv_bytes_count = 0;
-    private $http_response_headers = null;
     private $next_metadata_index = null;
     private $icy_metaint = null;
     private $resp_header;
