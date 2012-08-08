@@ -32,7 +32,7 @@
       $this->resp_header = new ResponseHeader();
       $this->mp3 = new AudioFile($this->mp3_filepath("untitled"));
       while ($buffer = $http_streaming->read())
-        if (!$this->handle_recv_data($buffer)) break;
+        if (!$this->process_received_data($buffer)) break;
     }
 
     private function mp3_filepath($filename){
@@ -45,7 +45,7 @@
         $this->mp3 = new AudioFile($this->mp3_filepath($this->metadata->stream_title()));
     }
 
-    public function handle_recv_data($buffer){
+    private function process_received_data($buffer){
       # Read headers and the icy-metaint value.
       if (!$this->resp_header->is_complete()){
         $this->resp_header->write_buffer($buffer);
