@@ -25,6 +25,10 @@
       fwrite($this->handle, substr($buffer, $meta_start+$meta_len));
     }
 
+    public static function safe_filename($string){
+      return trim(preg_replace("/[^a-zA-Z0-9_]+/", "", str_replace(" ", "_", $string)));
+    }
+
     private function open(){
       $this->handle = fopen($this->path, 'wb');
     }

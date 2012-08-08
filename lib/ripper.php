@@ -41,8 +41,8 @@
 
     private function metadata_block_completed($metadata){
       echo "\nMETADATA IS: ".$metadata->content()." (".$metadata->length().")";
-      echo "\nSTREAMTITLE IS: ".$metadata->stream_title();
-      $this->mp3 = new AudioFile($this->mp3_filepath($this->metadata->stream_title()));
+      if ($this->options['split_tracks'])
+        $this->mp3 = new AudioFile($this->mp3_filepath($this->metadata->stream_title()));
     }
 
     public function handle_recv_data($buffer){
