@@ -5,7 +5,7 @@
     private $content = '';
     private $empty_line_index = null;
 
-    public function append_content($buffer){
+    public function write_buffer($buffer){
       $this->content .= $buffer;
     }
 

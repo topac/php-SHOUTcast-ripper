@@ -5,7 +5,7 @@
     private $socket;
     private $address;
     private $port;
-    const BUFLEN = 30;
+    const BUFLEN = 4000;
 
     public function __construct($address, $port){
       $this->address = $address;

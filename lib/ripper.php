@@ -9,30 +9,46 @@
 
   class Ripper {
     private $recv_bytes_count = 0;
-    private $next_metadata_index = null;
-    private $icy_metaint = null;
+    private $next_metadata_index;
+    private $icy_metaint;
     private $resp_header;
     private $mp3;
     private $metadata;
+    private $options;
+    private $default_options = array(
+      'path'          => '.',
+      'split_tracks'  => false,
+      'max_duration'  => 1800, #sec
+      'max_length'    => 50000000 #bytes
+    );
+
+    public function __construct($options=array()) {
+      $this->options = array_merge($this->default_options, $options);
+    }
 
     public function start($address, $port){
-      $this->resp_header = new ResponseHeader();
-      $this->mp3 = new AudioFile('/Users/topac/dev/php-SHOUTcast-ripper/tmp.mp3');
-
       $http_streaming = new HttpStreaming($address, $port);
       $http_streaming->open();
+      $this->resp_header = new ResponseHeader();
+      $this->mp3 = new AudioFile($this->mp3_filepath("untitled"));
       while ($buffer = $http_streaming->read())
-        $this->handle_recv_data($buffer);
+        if (!$this->handle_recv_data($buffer)) break;
+    }
+
+    private function mp3_filepath($filename){
+      return realpath($this->options['path'])."/$filename.mp3";
     }
 
     private function metadata_block_completed($metadata){
       echo "\nMETADATA IS: ".$metadata->content()." (".$metadata->length().")";
+      echo "\nSTREAMTITLE IS: ".$metadata->stream_title();
+      $this->mp3 = new AudioFile($this->mp3_filepath($this->metadata->stream_title()));
     }
 
     public function handle_recv_data($buffer){
       # Read headers and the icy-metaint value.
       if (!$this->resp_header->is_complete()){
-        $this->resp_header->append_content($buffer);
+        $this->resp_header->write_buffer($buffer);
       }
 
       if ($this->resp_header->is_complete() && $this->next_metadata_index == null){
