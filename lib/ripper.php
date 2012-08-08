@@ -65,10 +65,10 @@
       $this->recv_bytes_count += $buffer_len;
 
       # There is still some metadata in the new buffer.
-      if ($this->metadata && $this->metadata->remaining_length() > 0){
+      if ($this->metadata && !$this->metadata->is_complete()){
         $remaining_len = $this->metadata->remaining_length();
         $this->metadata->write_buffer(substr($buffer, 0, $remaining_len));
-        if ($this->metadata->remaining_length() == 0) {
+        if ($this->metadata->is_complete()) {
           $this->metadata_block_completed($this->metadata);
           $this->mp3->write_buffer_skipping_metadata($buffer, 0, $remaining_len+1);
         }
@@ -90,7 +90,7 @@
         if ($this->metadata->expected_length() > 0){
           $this->metadata->write_buffer(($start != $buffer_len) ? substr($buffer, $start+1, $this->metadata->expected_length()) : '');
           $this->mp3->write_buffer_skipping_metadata($buffer, $start+1, $this->metadata->expected_length()+1);
-          if ($this->metadata->remaining_length() == 0){
+          if ($this->metadata->is_complete()){
             $this->metadata_block_completed($this->metadata);
           }
         } else {
