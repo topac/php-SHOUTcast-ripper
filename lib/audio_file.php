@@ -36,7 +36,12 @@
     }
 
     public static function safe_filename($string){
-      return trim(preg_replace("/[^a-zA-Z0-9_]+/", "", trim(str_replace(" ", "_", $string))));
+      $name = trim(preg_replace("/[^a-zA-Z0-9_]+/", "", trim(str_replace(" ", "_", $string))));
+      return strlen($name) > 0 ? $name : self::default_mp3file_name();
+    }
+
+    public static function default_mp3file_name(){
+      return "untitled_".date("Ymd_his");
     }
 
     private function open(){
