@@ -2,11 +2,12 @@
   namespace SHOUTcastRipper;
 
   class AudioFile {
-    private $handle;
-    private $path;
+    private $handle, $path, $length, $opened_at;
 
     public function __construct($path){
       $this->path = $path;
+      $this->length = 0;
+      $this->opened_at = time();
       $this->open();
     }
 
@@ -14,19 +15,28 @@
       $this->close();
     }
 
+    public function length(){
+      return $this->length();
+    }
+
+    public function duration(){
+      return time() - $this->opened_at;
+    }
+
     public function write_buffer($buffer, $start=0, $len = null){
       $buffer = $len ? substr($buffer, $start, $len) : substr($buffer, $start);
       fwrite($this->handle, $buffer);
+      $this->length += strlen($buffer);
     }
 
     public function write_buffer_skipping_metadata($buffer, $meta_start, $meta_len){
       if ($meta_start != 0)
-        fwrite($this->handle, substr($buffer, 0, $meta_start));
-      fwrite($this->handle, substr($buffer, $meta_start+$meta_len));
+        $this->write_buffer(substr($buffer, 0, $meta_start));
+      $this->write_buffer(substr($buffer, $meta_start+$meta_len));
     }
 
     public static function safe_filename($string){
-      return trim(preg_replace("/[^a-zA-Z0-9_]+/", "", str_replace(" ", "_", $string)));
+      return trim(preg_replace("/[^a-zA-Z0-9_]+/", "", trim(str_replace(" ", "_", $string))));
     }
 
     private function open(){
