@@ -1,6 +1,7 @@
 <?php
   error_reporting(E_ALL);
   set_time_limit(0);
+  date_default_timezone_set('Europe/Rome');
 
   require 'lib/ripper.php';
 
