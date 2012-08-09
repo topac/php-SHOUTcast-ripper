@@ -9,17 +9,13 @@
 
   class Ripper {
     private $recv_bytes_count = 0;
-    private $next_metadata_index;
-    private $icy_metaint;
-    private $resp_header;
+    private $metadata, $next_metadata_index, $icy_metaint, $resp_header;
     private $mp3;
-    private $metadata;
-    private $options;
-    private $default_options = array(
-      'path'          => '.',
-      'split_tracks'  => false,
-      'max_duration'  => 1800, #sec
-      'max_length'    => 50000000 #bytes
+    private $options, $default_options = array(
+      'path'               => '.',
+      'split_tracks'       => false,
+      'max_track_duration' => 3600, #sec (1 h)
+      'max_track_length'   => 102400000 #bytes (100 mb)
     );
 
     public function __construct($options=array()) {
@@ -29,20 +25,25 @@
     public function start($address, $port){
       $http_streaming = new HttpStreaming($address, $port);
       $http_streaming->open();
+      $this->open_mp3file($this->default_mp3file_name($address));
       $this->resp_header = new ResponseHeader();
-      $this->mp3 = new AudioFile($this->mp3_filepath("untitled"));
       while ($buffer = $http_streaming->read())
         if (!$this->process_received_data($buffer)) break;
     }
 
-    private function mp3_filepath($filename){
-      return realpath($this->options['path'])."/$filename.mp3";
+    private function default_mp3file_name($stream_address=''){
+      return AudioFile::safe_filename("$stream_address ".date("Ymd_his"));
     }
 
-    private function metadata_block_completed($metadata){
-      echo "\nMETADATA IS: ".$metadata->content()." (".$metadata->length().")";
+    private function open_mp3file($filename){
+      $path = realpath($this->options['path'])."/$filename.mp3";
+      $this->mp3 = new AudioFile($path);
+    }
+
+    private function metadata_block_completed(){
+      echo "\nMETADATA IS: ".$this->metadata->content()." (".$this->metadata->length().")";
       if ($this->options['split_tracks'])
-        $this->mp3 = new AudioFile($this->mp3_filepath($this->metadata->stream_title()));
+        $this->open_mp3file($this->metadata->stream_title());
     }
 
     private function process_received_data($buffer){
@@ -69,7 +70,7 @@
         $remaining_len = $this->metadata->remaining_length();
         $this->metadata->write_buffer(substr($buffer, 0, $remaining_len));
         if ($this->metadata->is_complete()) {
-          $this->metadata_block_completed($this->metadata);
+          $this->metadata_block_completed();
           $this->mp3->write_buffer_skipping_metadata($buffer, 0, $remaining_len+1);
         }
       }
@@ -91,7 +92,7 @@
           $this->metadata->write_buffer(($start != $buffer_len) ? substr($buffer, $start+1, $this->metadata->expected_length()) : '');
           $this->mp3->write_buffer_skipping_metadata($buffer, $start+1, $this->metadata->expected_length()+1);
           if ($this->metadata->is_complete()){
-            $this->metadata_block_completed($this->metadata);
+            $this->metadata_block_completed();
           }
         } else {
           # Metadata block is not present.
