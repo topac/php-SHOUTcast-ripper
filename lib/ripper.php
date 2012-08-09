@@ -32,7 +32,7 @@
     }
 
     private function are_limits_reached(){
-      $this->mp3->length() >= $this->options['max_track_length'] || $this->mp3->duration() >= $this->options['max_track_duration'];
+      return $this->mp3->length() >= $this->options['max_track_length'] || $this->mp3->duration() >= $this->options['max_track_duration'];
     }
 
     private function default_mp3file_name($stream_address=''){

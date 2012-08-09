@@ -8,6 +8,8 @@
   $address = "fsolerio.primcast.com";
   $port = 6178;
 
-  $ripper = new SHOUTcastRipper\Ripper();
+  $ripper = new SHOUTcastRipper\Ripper(array(
+    'max_track_duration' => 3600
+  ));
   $ripper->start($address, $port);
 ?>
