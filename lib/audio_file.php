@@ -16,7 +16,7 @@
     }
 
     public function length(){
-      return $this->length();
+      return $this->length;
     }
 
     public function duration(){
