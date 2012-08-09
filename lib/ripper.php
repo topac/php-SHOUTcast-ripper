@@ -28,7 +28,11 @@
       $this->open_mp3file($this->default_mp3file_name($address));
       $this->resp_header = new ResponseHeader();
       while ($buffer = $http_streaming->read())
-        if (!$this->process_received_data($buffer)) break;
+        if (!$this->process_received_data($buffer) || $this->are_limits_reached()) break;
+    }
+
+    private function are_limits_reached(){
+      $this->mp3->length() >= $this->options['max_track_length'] || $this->mp3->duration() >= $this->options['max_track_duration'];
     }
 
     private function default_mp3file_name($stream_address=''){
