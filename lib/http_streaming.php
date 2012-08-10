@@ -2,10 +2,12 @@
   namespace SHOUTcastRipper;
 
   class HttpStreaming {
-    private $socket;
-    private $address;
-    private $port;
+    private $socket, $address, $port;
+    /**
+     * Define the max length of the buffer used by fread.
+     */
     const BUFLEN = 2048;
+    const CONNECT_TIMEOUT = 10;
 
     public function __construct($address, $port){
       $this->address = $address;
@@ -16,9 +18,13 @@
       $this->close();
     }
 
+    /**
+     * Opens a socket to the given address and port and sends the http header.
+     */
     public function open(){
-      if (($this->socket = fsockopen($this->address, $this->port, $errno, $errstr)) == false)
-        throw new Exception("Error opening socket to $address. [$errno] $errstr");
+      $this->close();
+      if (!($this->socket = fsockopen($this->address, $this->port, $errno, $errstr, self::CONNECT_TIMEOUT)))
+        throw new Exception("fsockopen() return error $errno: $errstr");
       $this->send_request();
     }
 
@@ -27,13 +33,23 @@
     }
 
     public function close(){
-      if ($this->socket) fclose($this->socket);
+      if (is_resource($this->socket)) {
+        fclose($this->socket);
+        $this->socket = null;
+      }
     }
 
     private function send_request(){
       fputs($this->socket, $this->request_header());
     }
 
+    /**
+     * Return a RequestHeader object. If the http headers contains the custom header "Icy-MetaData"
+     * the SHOUTcast server will reply with the audio stream and a metadata block containing the current
+     * stream title and other infos.
+     *
+     * @see "The Shoutcast standard" chapter at http://jicyshout.sourceforge.net/oreilly-article/java-streaming-mp3-pt2/java-streaming-mp3-pt2.html
+     */
     private function request_header(){
       return new RequestHeader($this->address, array(
         'port'           => $this->port,
