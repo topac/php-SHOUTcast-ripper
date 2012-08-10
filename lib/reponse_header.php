@@ -21,7 +21,7 @@
     }
 
     public function remove_tail_stream_data() {
-      if (!$this->is_complete()) throw new Exception("headers not completed");
+      if (!$this->is_complete()) throw new \Exception("headers not completed");
       $headers = substr($this->content, 0, $this->empty_line_index());
       $stream = substr($this->content, strlen($headers));
       $this->content = $headers;
@@ -29,7 +29,7 @@
     }
 
     public function icy_metaint(){
-      if (!$this->is_complete()) throw new Exception("headers not completed");
+      if (!$this->is_complete()) throw new \Exception("headers not completed");
       $header_name = "icy-metaint";
       if (($end_of_header_name = stripos($this->content, "$header_name:")) === false) {
         return null;
