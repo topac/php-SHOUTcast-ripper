@@ -2,7 +2,7 @@
   namespace SHOUTcastRipper;
 
   class HttpStreaming {
-    private $socket, $address, $port;
+    private $socket, $address, $port, $response_header, $initial_audio_data;
     /**
      * Define the max length of the buffer used by fread.
      */
@@ -18,6 +18,9 @@
       $this->close();
     }
 
+    public function response_header(){
+      return $this->response_header;
+    }
     /**
      * Opens a socket to the given address:port and sends the http header,
      * the server will reply with an http resp header and a continuous flow of bytes
@@ -25,12 +28,23 @@
      */
     public function open(){
       $this->close();
+      $this->initial_audio_data = null;
+      $this->response_header = new ResponseHeader();
       if (!($this->socket = fsockopen($this->address, $this->port, $errno, $errstr, self::CONNECT_TIMEOUT)))
-        throw new Exception("fsockopen() return error $errno: $errstr");
-      $this->send_request();
+        throw new \Exception("fsockopen() return error $errno: $errstr");
+      $this->send_request_header();
+      $this->read_response_header();
     }
 
-    public function read(){
+    public function read_stream(){
+      if (($ad = $this->initial_audio_data)) {
+        $this->initial_audio_data = null;
+        return $ad;
+      }
+      return $this->read();
+    }
+
+    private function read(){
       return fread($this->socket, self::BUFLEN);
     }
 
@@ -41,7 +55,17 @@
       }
     }
 
-    private function send_request(){
+    private function read_response_header(){
+      $buffer = $this->read();
+      if (!$this->response_header->is_complete()) $this->response_header->write_buffer($buffer);
+      if ($this->response_header->is_complete()){
+        $this->initial_audio_data = $this->response_header->remove_tail_stream_data();
+        return;
+      }
+      $this->read_response_header();
+    }
+
+    private function send_request_header(){
       fputs($this->socket, $this->request_header());
     }
 

@@ -9,7 +9,7 @@
 
   class Ripper {
     private $recv_bytes_count = 0;
-    private $metadata, $next_metadata_index, $icy_metaint, $resp_header;
+    private $metadata, $next_metadata_index, $icy_metaint;
     private $mp3;
     private $options, $default_options = array(
       'path'               => '.',
@@ -25,9 +25,13 @@
     public function start($address, $port){
       $http_streaming = new HttpStreaming($address, $port);
       $http_streaming->open();
-      $this->open_mp3file(AudioFile::default_mp3file_name()) ;
-      $this->resp_header = new ResponseHeader();
-      while ($buffer = $http_streaming->read())
+
+      $response_header = $http_streaming->response_header();
+      $this->icy_metaint = $response_header->icy_metaint();
+      $this->next_metadata_index = $response_header->icy_metaint();
+
+      $this->open_mp3file(AudioFile::default_mp3file_name());
+      while ($buffer = $http_streaming->read_stream())
         if (!$this->process_received_data($buffer) || $this->are_limits_reached()) break;
     }
 
@@ -47,20 +51,6 @@
     }
 
     private function process_received_data($buffer){
-      # Read headers and the icy-metaint value.
-      if (!$this->resp_header->is_complete()){
-        $this->resp_header->write_buffer($buffer);
-      }
-
-      if ($this->resp_header->is_complete() && $this->next_metadata_index == null){
-        $this->icy_metaint = $this->resp_header->icy_metaint();
-        $this->next_metadata_index = $this->resp_header->icy_metaint();
-        $buffer = $this->resp_header->remove_tail_stream_data();
-      }
-
-      if ($this->next_metadata_index == null)
-        return true;
-
       # At this point the respose headers has been stored and removed from the audio stream.
       $buffer_len = strlen($buffer);
       $this->recv_bytes_count += $buffer_len;
