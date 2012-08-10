@@ -6,10 +6,13 @@
   require 'lib/ripper.php';
 
   $address = "fsolerio.primcast.com";
-  $port = 6178;
+  $port    = 6178;
 
   $ripper = new SHOUTcastRipper\Ripper(array(
+    'path'               => './ripped_streams',
+    'split_tracks'       => true,
     'max_track_duration' => 3600
   ));
+
   $ripper->start($address, $port);
 ?>
