@@ -19,7 +19,9 @@
     }
 
     /**
-     * Opens a socket to the given address and port and sends the http header.
+     * Opens a socket to the given address:port and sends the http header,
+     * the server will reply with an http resp header and a continuous flow of bytes
+     * that represent the audio data.
      */
     public function open(){
       $this->close();
