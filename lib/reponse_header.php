@@ -20,12 +20,20 @@
       return !!$this->empty_line_index();
     }
 
-    public function remove_tail_stream_data() {
+    public function remove_tail_audio_data() {
       if (!$this->is_complete()) throw new \Exception("headers not completed");
       $headers = substr($this->content, 0, $this->empty_line_index());
       $stream = substr($this->content, strlen($headers));
       $this->content = $headers;
       return $stream;
+    }
+
+    public function length(){
+      return strlen($this->content);
+    }
+
+    public function contains_audio_data(){
+      return $this->is_complete() && $this->empty_line_index()+4 < $this->length();
     }
 
     public function icy_metaint(){
