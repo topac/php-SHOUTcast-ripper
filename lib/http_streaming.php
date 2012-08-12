@@ -3,30 +3,28 @@
 
   class HttpStreaming {
     private $socket, $address, $port, $response_header;
-    /**
-     * Define the max length of the buffer used by fread.
-     */
-    const BUFLEN = 2048;
+    const READ_BUFFER_LEN = 2048;
     const CONNECT_TIMEOUT = 10;
 
-    public function __construct($address, $port){
+    public function __construct($address, $port) {
       $this->address = $address;
       $this->port = $port;
     }
 
-    public function __destruct(){
+    public function __destruct() {
       $this->close();
     }
 
-    public function response_header(){
+    public function response_header() {
       return $this->response_header;
     }
+
     /**
      * Opens a socket to the given address:port and sends the http header,
-     * the server will reply with an http resp header and a continuous flow of bytes
+     * the server will reply with an http response header and a continuous flow of bytes
      * that represent the audio data.
      */
-    public function open(){
+    public function open() {
       $this->close();
       if (!($this->socket = fsockopen($this->address, $this->port, $errno, $errstr, self::CONNECT_TIMEOUT)))
         throw new \Exception("fsockopen() return error $errno: $errstr");
@@ -35,29 +33,34 @@
       $this->read_response_header();
     }
 
-    public function read_stream(){
+    /**
+     * Return a buffer of audio data readed from the socket.
+     * The audio data can contains metadata.
+     */
+    public function read_stream() {
       return ($this->response_header->contains_audio_data()) ? $this->response_header->remove_tail_audio_data() : $this->read();
     }
 
-    private function read(){
-      return fread($this->socket, self::BUFLEN);
+
+    public function close() {
+      if (is_resource($this->socket)) fclose($this->socket);
     }
 
-    public function close(){
-      if (is_resource($this->socket)) {
-        fclose($this->socket);
-        $this->socket = null;
-      }
+    private function read() {
+      return fread($this->socket, self::READ_BUFFER_LEN);
     }
 
-    private function read_response_header(){
+    /**
+     * Recursively reads data from the socket until the http response header is totally received.
+     */
+    private function read_response_header() {
       $buffer = $this->read();
       if (!$this->response_header->is_complete()) $this->response_header->write_buffer($buffer);
       if ($this->response_header->is_complete()) return;
       $this->read_response_header();
     }
 
-    private function send_request_header(){
+    private function send_request_header() {
       fputs($this->socket, $this->request_header());
     }
 
@@ -68,7 +71,7 @@
      *
      * @see "The Shoutcast standard" chapter at http://jicyshout.sourceforge.net/oreilly-article/java-streaming-mp3-pt2/java-streaming-mp3-pt2.html
      */
-    private function request_header(){
+    private function request_header() {
       return new RequestHeader($this->address, array(
         'port'           => $this->port,
         'custom_headers' => array('Icy-MetaData' => 1)
