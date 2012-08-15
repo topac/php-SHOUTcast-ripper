@@ -68,8 +68,6 @@
      * Return a RequestHeader object. If the http headers contains the custom header "Icy-MetaData"
      * the SHOUTcast server will reply with the audio stream and a metadata block containing the current
      * stream title and other infos.
-     *
-     * @see "The Shoutcast standard" chapter at http://jicyshout.sourceforge.net/oreilly-article/java-streaming-mp3-pt2/java-streaming-mp3-pt2.html
      */
     private function request_header() {
       return new RequestHeader($this->address, array(
