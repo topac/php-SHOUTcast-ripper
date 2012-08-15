@@ -13,8 +13,8 @@
       return $this->expected_length;
     }
 
-    public function write_buffer($data) {
-      $this->content .= $data;
+    public function write($buffer) {
+      $this->content .= $buffer;
     }
 
     public function content() {
@@ -38,7 +38,7 @@
         throw new \Exception("The metadata block is not complete yet");
       $start = strlen("StreamTitle=");
       $end = strpos($this->content, ";", $start);
-      return AudioFile::safe_filename(substr($this->content, $start, $end-$start));
+      return substr($this->content, $start, $end-$start);
     }
   }
 ?>
