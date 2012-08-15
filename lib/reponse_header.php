@@ -10,16 +10,6 @@
     }
 
     /**
-     * Gets the position of the last line of the http header. The last line is "\r\n\r\n".
-     */
-    private function empty_line_index() {
-      if ($this->empty_line_index != null)
-        return $this->empty_line_index;
-      $index = strpos($this->content, "\r\n\r\n");
-      return $index ? $index+4 : null;
-    }
-
-    /**
      * Returns true if all the http header has been writed.
      */
     public function is_complete() {
@@ -61,6 +51,16 @@
       $end_of_header_name += strlen($header_name)+1;
       $end_of_header_value = strpos($this->content, "\r\n", $end_of_header_name);
       return substr($this->content, $end_of_header_name, $end_of_header_value-$end_of_header_name)*1;
+    }
+
+    /**
+     * Gets the position of the last line of the http header. The last line is "\r\n\r\n".
+     */
+    private function empty_line_index() {
+      if ($this->empty_line_index != null)
+        return $this->empty_line_index;
+      $index = strpos($this->content, "\r\n\r\n");
+      return $index ? $index+4 : null;
     }
   }
 ?>
