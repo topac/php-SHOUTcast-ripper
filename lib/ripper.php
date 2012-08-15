@@ -67,13 +67,6 @@
         $this->metadata = new MetadataBlock(ord($buffer[$start])*16);
         $end = $start+1+$this->metadata->expected_length();
 
-        echo "\n=====================\nstart = $start";
-        echo "\nend = $end";
-        echo "\nmetadata_len = ".$this->metadata->expected_length();
-        echo "\nbuf len = ".$buffer_len;
-        echo "\nnext metaint = $this->next_metadata_position";
-        echo "\nstream_bytes_count = $this->stream_bytes_count";
-
         # Metadata block exists
         if ($this->metadata->expected_length() > 0){
           $this->metadata->write(($start != $buffer_len) ? substr($buffer, $start+1, $this->metadata->expected_length()) : '');
@@ -87,12 +80,11 @@
           $this->mp3->write_buffer_skipping_metadata($buffer, $start, 1);
         }
 
-        echo "\nremaining_meta = ".$this->metadata->remaining_length();
         $this->next_metadata_position = $this->next_metadata_position+$this->icy_metaint+$this->metadata->expected_length()+1;
       }
       # Buffers with only audio stream can be dumped directly.
       else{
-        $this-> mp3->write_buffer($buffer);
+        $this->mp3->write_buffer($buffer);
       }
       return true;
     }
