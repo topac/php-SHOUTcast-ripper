@@ -14,5 +14,6 @@
     'max_track_duration' => 3600
   ));
 
+  echo "ripping...\n";
   $ripper->start($url);
 ?>
