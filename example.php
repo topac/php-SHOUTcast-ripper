@@ -5,8 +5,8 @@
 
   require 'lib/ripper.php';
 
+  # You must always specify the protocol (http://)
   $url = "http://fsolerio.primcast.com:6178";
-  // $url = "http://ghost.wavestreamer.com:5254/stream/18446744073709551615/";
 
   $ripper = new SHOUTcastRipper\Ripper(array(
     'path'               => './ripped_streams',

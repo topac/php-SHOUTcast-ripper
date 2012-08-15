@@ -63,7 +63,8 @@
     }
 
     private function open() {
-      $this->handle = fopen($this->path, 'wb');
+      if (!($this->handle = fopen($this->path, 'wb')))
+        throw new \Exception("Unable to create file {$this->path}");
     }
 
     private function close() {

@@ -8,9 +8,7 @@
   require 'http_streaming.php';
 
   class Ripper {
-    private $recv_bytes_count = 0;
-    private $metadata, $next_metadata_index, $icy_metaint;
-    private $mp3;
+    private $metadata, $next_metadata_position, $icy_metaint, $mp3, $stream_bytes_count = 0;
     private $options, $default_options = array(
       'path'               => '.',
       'split_tracks'       => false,
@@ -22,17 +20,17 @@
       $this->options = array_merge($this->default_options, $options);
     }
 
-    public function start($url){
+    public function start($url) {
       $http_streaming = new HttpStreaming($url);
       $http_streaming->open();
 
       $response_message = $http_streaming->response_message();
       $this->icy_metaint = $response_message->icy_metaint();
-      $this->next_metadata_index = $response_message->icy_metaint();
+      $this->next_metadata_position = $this->icy_metaint;
 
       $this->open_mp3file(AudioFile::default_mp3file_name());
       while ($buffer = $http_streaming->read_stream())
-        if (!$this->process_received_data($buffer) || $this->are_limits_reached()) break;
+        if (!$this->process_received_buffer($buffer) || $this->are_limits_reached()) break;
     }
 
     private function are_limits_reached(){
@@ -40,20 +38,19 @@
     }
 
     private function open_mp3file($filename){
-      $path = realpath($this->options['path'])."/$filename.mp3";
-      $this->mp3 = new AudioFile($path);
+      $fullpath = realpath($this->options['path'])."/$filename.mp3";
+      $this->mp3 = new AudioFile($fullpath);
     }
 
     private function metadata_block_completed(){
-      echo "\nMETADATA IS: ".$this->metadata->content()." (".$this->metadata->length().")";
-      if ($this->options['split_tracks'])
+      if ($this->options['split_tracks']) {
         $this->open_mp3file(AudioFile::safe_filename($this->metadata->stream_title()));
+      }
     }
 
-    private function process_received_data($buffer){
-      # At this point the respose headers has been stored and removed from the audio stream.
+    private function process_received_buffer($buffer){
       $buffer_len = strlen($buffer);
-      $this->recv_bytes_count += $buffer_len;
+      $this->stream_bytes_count += $buffer_len;
 
       # There is still some metadata in the new buffer.
       if ($this->metadata && !$this->metadata->is_complete()){
@@ -65,8 +62,8 @@
         }
       }
       # A new metadata block has begun
-      else if ($this->icy_metaint && $this->recv_bytes_count > $this->next_metadata_index) {
-        $start = $buffer_len-($this->recv_bytes_count-$this->next_metadata_index);
+      else if ($this->icy_metaint && $this->stream_bytes_count > $this->next_metadata_position) {
+        $start = $buffer_len-($this->stream_bytes_count-$this->next_metadata_position);
         $this->metadata = new MetadataBlock(ord($buffer[$start])*16);
         $end = $start+1+$this->metadata->expected_length();
 
@@ -74,23 +71,24 @@
         echo "\nend = $end";
         echo "\nmetadata_len = ".$this->metadata->expected_length();
         echo "\nbuf len = ".$buffer_len;
-        echo "\nnext metaint = $this->next_metadata_index";
-        echo "\nrecv_bytes_count = $this->recv_bytes_count";
+        echo "\nnext metaint = $this->next_metadata_position";
+        echo "\nstream_bytes_count = $this->stream_bytes_count";
 
-        # Metadata block is present.
+        # Metadata block exists
         if ($this->metadata->expected_length() > 0){
           $this->metadata->write(($start != $buffer_len) ? substr($buffer, $start+1, $this->metadata->expected_length()) : '');
           $this->mp3->write_buffer_skipping_metadata($buffer, $start+1, $this->metadata->expected_length()+1);
           if ($this->metadata->is_complete()){
             $this->metadata_block_completed();
           }
-        } else {
-          # Metadata block is not present.
+        }
+        # Metadata block is not present.
+        else {
           $this->mp3->write_buffer_skipping_metadata($buffer, $start, 1);
         }
 
         echo "\nremaining_meta = ".$this->metadata->remaining_length();
-        $this->next_metadata_index = $this->next_metadata_index+$this->icy_metaint+$this->metadata->expected_length()+1;
+        $this->next_metadata_position = $this->next_metadata_position+$this->icy_metaint+$this->metadata->expected_length()+1;
       }
       # Buffers with only audio stream can be dumped directly.
       else{
