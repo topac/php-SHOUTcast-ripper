@@ -55,7 +55,7 @@
      */
     private function read_response_header() {
       $buffer = $this->read();
-      if (!$this->response_header->is_complete()) $this->response_header->write_buffer($buffer);
+      if (!$this->response_header->is_complete()) $this->response_header->write($buffer);
       if ($this->response_header->is_complete()) return;
       $this->read_response_header();
     }
