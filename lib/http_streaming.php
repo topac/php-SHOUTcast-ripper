@@ -2,13 +2,13 @@
   namespace SHOUTcastRipper;
 
   class HttpStreaming {
-    private $socket, $address, $port, $response_message;
+    private $socket, $address, $port, $url, $response_message;
     const READ_BUFFER_LEN = 2048;
     const CONNECT_TIMEOUT = 10;
 
-    public function __construct($address, $port) {
-      $this->address = $address;
-      $this->port    = $port;
+    public function __construct($url) {
+      $this->url = $url;
+      $this->parse_url();
     }
 
     public function __destruct() {
@@ -70,8 +70,16 @@
      * stream title and other infos.
      */
     private function request_message() {
-      $request = new HttpRequestMessage($this->address, $this->port, array('Icy-MetaData' => 1));
+      $request = new HttpRequestMessage($this->url, array('Icy-MetaData' => 1));
       return $request->content();
+    }
+
+    private function parse_url() {
+      $url_parts = parse_url($this->url);
+      if (!isset($url_parts["scheme"]) || strtolower($url_parts["scheme"]) != "http")
+        throw new \Exception("Invalid url scheme");
+      $this->address = $url_parts["host"];
+      $this->port    = $url_parts["port"];
     }
   }
 ?>

@@ -22,8 +22,8 @@
       $this->options = array_merge($this->default_options, $options);
     }
 
-    public function start($address, $port){
-      $http_streaming = new HttpStreaming($address, $port);
+    public function start($url){
+      $http_streaming = new HttpStreaming($url);
       $http_streaming->open();
 
       $response_message = $http_streaming->response_message();

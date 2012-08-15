@@ -5,8 +5,8 @@
 
   require 'lib/ripper.php';
 
-  $address = "fsolerio.primcast.com";
-  $port    = 6178;
+  $url = "http://fsolerio.primcast.com:6178";
+  // $url = "http://ghost.wavestreamer.com:5254/stream/18446744073709551615/";
 
   $ripper = new SHOUTcastRipper\Ripper(array(
     'path'               => './ripped_streams',
@@ -14,5 +14,5 @@
     'max_track_duration' => 3600
   ));
 
-  $ripper->start($address, $port);
+  $ripper->start($url);
 ?>

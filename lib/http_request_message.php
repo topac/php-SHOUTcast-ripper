@@ -5,10 +5,10 @@
     private $content='';
     const CRLF = "\r\n";
 
-    public function __construct($address, $port=80, $headers=array()) {
-      $path = '/';
-      $this->add_line("GET $path HTTP/1.1");
-      $this->add_header("Host", "$address:$port");
+    public function __construct($url, $headers=array()) {
+      $url_parts = parse_url($url);
+      $this->add_line("GET ".(isset($url_parts["path"]) ? $url_parts["path"] : '/')." HTTP/1.1");
+      $this->add_header("Host", "{$url_parts['host']}:{$url_parts['port']}");
       $this->add_header("User-Agent", "PHP");
       $this->add_header("Accept", "*/*");
       foreach ($headers as $key => $value)
