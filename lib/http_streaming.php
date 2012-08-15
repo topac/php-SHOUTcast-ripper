@@ -70,10 +70,7 @@
      * stream title and other infos.
      */
     private function request_header() {
-      return new RequestHeader($this->address, array(
-        'port'           => $this->port,
-        'custom_headers' => array('Icy-MetaData' => 1)
-      ));
+      return new RequestHeader($this->address, $this->port, array('Icy-MetaData' => 1));
     }
   }
 ?>
