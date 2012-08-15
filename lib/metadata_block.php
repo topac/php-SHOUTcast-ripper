@@ -34,7 +34,8 @@
     }
 
     public function stream_title() {
-      if (!$this->is_complete()) return null;
+      if (!$this->is_complete())
+        throw new \Exception("The metadata block is not complete yet");
       $start = strlen("StreamTitle=");
       $end = strpos($this->content, ";", $start);
       return AudioFile::safe_filename(substr($this->content, $start, $end-$start));
