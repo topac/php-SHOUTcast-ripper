@@ -1,10 +1,10 @@
 <?php
   namespace SHOUTcastRipper;
 
-  require 'request_header.php';
-  require 'reponse_header.php';
   require 'audio_file.php';
   require 'metadata_block.php';
+  require 'http_request.php';
+  require 'http_reponse.php';
   require 'http_streaming.php';
 
   class Ripper {
