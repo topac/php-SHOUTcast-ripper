@@ -3,8 +3,8 @@
 
   require 'audio_file.php';
   require 'metadata_block.php';
-  require 'http_request.php';
-  require 'http_reponse.php';
+  require 'http_request_message.php';
+  require 'http_reponse_message.php';
   require 'http_streaming.php';
 
   class Ripper {

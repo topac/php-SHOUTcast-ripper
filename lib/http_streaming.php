@@ -28,7 +28,7 @@
       $this->close();
       if (!($this->socket = fsockopen($this->address, $this->port, $errno, $errstr, self::CONNECT_TIMEOUT)))
         throw new \Exception("fsockopen() return error $errno: $errstr");
-      $this->response_message = new HttpResponse();
+      $this->response_message = new HttpResponseMessage();
       $this->send_request_message();
       $this->read_response_message();
     }
@@ -70,7 +70,8 @@
      * stream title and other infos.
      */
     private function request_message() {
-      return new HttpRequest($this->address, $this->port, array('Icy-MetaData' => 1));
+      $request = new HttpRequestMessage($this->address, $this->port, array('Icy-MetaData' => 1));
+      return $request->content();
     }
   }
 ?>

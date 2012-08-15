@@ -1,7 +1,7 @@
 <?php
   namespace SHOUTcastRipper;
 
-  class HttpResponse {
+  class HttpResponseMessage {
     private $content = '';
     private $empty_line_index = null;
 
