@@ -1,7 +1,7 @@
 <?php
   namespace SHOUTcastRipper;
 
-  class ResponseHeader {
+  class HttpResponse {
     private $content = '';
     private $empty_line_index = null;
 
@@ -10,22 +10,22 @@
     }
 
     /**
-     * Returns true if all the http header has been writed.
+     * Returns true if all the http response message (all the headers) has been writed.
      */
     public function is_complete() {
       return !!$this->empty_line_index();
     }
 
     /**
-     * Removes from $content all the bytes after the end of the http header,
+     * Removes from $content all the bytes after the end of the http response message,
      * and returns those bytes.
      */
     public function remove_tail_audio_data() {
       if (!$this->is_complete())
-        throw new \Exception("The http header is dirty or incomplete");
-      $headers = substr($this->content, 0, $this->empty_line_index());
-      $stream = substr($this->content, strlen($headers));
-      $this->content = $headers;
+        throw new \Exception("The http response message is dirty or incomplete");
+      $message = substr($this->content, 0, $this->empty_line_index());
+      $stream = substr($this->content, strlen($message));
+      $this->content = $message;
       return $stream;
     }
 
@@ -34,7 +34,7 @@
     }
 
     /**
-     * Returns true if there are any bytes after the http header.
+     * Returns true if there are any bytes after the http response message.
      * If true, those bytes are the audio data and they can be getted
      * using the remove_tail_audio_data() method.
      */
@@ -44,7 +44,7 @@
 
     public function icy_metaint() {
       if (!$this->is_complete())
-        throw new \Exception("The http header is dirty or incomplete");
+        throw new \Exception("The http response message is dirty or incomplete");
       $header_name = "icy-metaint";
       if (($end_of_header_name = stripos($this->content, "$header_name:")) === false)
         return null;
@@ -54,7 +54,7 @@
     }
 
     /**
-     * Gets the position of the last line of the http header. The last line is "\r\n\r\n".
+     * Gets the position of the last line of the http reponse message. The last line is "\r\n\r\n".
      */
     private function empty_line_index() {
       if ($this->empty_line_index != null)

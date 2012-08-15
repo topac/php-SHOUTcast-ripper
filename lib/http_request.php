@@ -1,7 +1,7 @@
 <?php
   namespace SHOUTcastRipper;
 
-  class RequestHeader {
+  class HttpRequest {
     private $address, $port, $headers;
     const CRLF = "\r\n";
 

@@ -2,35 +2,35 @@
   namespace SHOUTcastRipper;
 
   class HttpStreaming {
-    private $socket, $address, $port, $response_header;
+    private $socket, $address, $port, $response_message;
     const READ_BUFFER_LEN = 2048;
     const CONNECT_TIMEOUT = 10;
 
     public function __construct($address, $port) {
       $this->address = $address;
-      $this->port = $port;
+      $this->port    = $port;
     }
 
     public function __destruct() {
       $this->close();
     }
 
-    public function response_header() {
-      return $this->response_header;
+    public function response_message() {
+      return $this->response_message;
     }
 
     /**
-     * Opens a socket to the given address:port and sends the http header,
-     * the server will reply with an http response header and a continuous flow of bytes
+     * Opens a socket to the given $address and sends the http request message,
+     * the server will reply with an http response message and a continuous flow of bytes
      * that represent the audio data.
      */
     public function open() {
       $this->close();
       if (!($this->socket = fsockopen($this->address, $this->port, $errno, $errstr, self::CONNECT_TIMEOUT)))
         throw new \Exception("fsockopen() return error $errno: $errstr");
-      $this->response_header = new ResponseHeader();
-      $this->send_request_header();
-      $this->read_response_header();
+      $this->response_message = new HttpResponse();
+      $this->send_request_message();
+      $this->read_response_message();
     }
 
     /**
@@ -38,7 +38,7 @@
      * The audio data can contains metadata.
      */
     public function read_stream() {
-      return ($this->response_header->contains_audio_data()) ? $this->response_header->remove_tail_audio_data() : $this->read();
+      return ($this->response_message->contains_audio_data()) ? $this->response_message->remove_tail_audio_data() : $this->read();
     }
 
 
@@ -51,26 +51,26 @@
     }
 
     /**
-     * Recursively reads data from the socket until the http response header is totally received.
+     * Recursively reads data from the socket until the http response message is totally received.
      */
-    private function read_response_header() {
+    private function read_response_message() {
       $buffer = $this->read();
-      if (!$this->response_header->is_complete()) $this->response_header->write($buffer);
-      if ($this->response_header->is_complete()) return;
-      $this->read_response_header();
+      if (!$this->response_message->is_complete()) $this->response_message->write($buffer);
+      if ($this->response_message->is_complete()) return;
+      $this->read_response_message();
     }
 
-    private function send_request_header() {
-      fputs($this->socket, $this->request_header());
+    private function send_request_message() {
+      fputs($this->socket, $this->request_message());
     }
 
     /**
-     * Return a RequestHeader object. If the http headers contains the custom header "Icy-MetaData"
+     * Gets the http request message; if it contains the non-standard header "Icy-MetaData"
      * the SHOUTcast server will reply with the audio stream and a metadata block containing the current
      * stream title and other infos.
      */
-    private function request_header() {
-      return new RequestHeader($this->address, $this->port, array('Icy-MetaData' => 1));
+    private function request_message() {
+      return new HttpRequest($this->address, $this->port, array('Icy-MetaData' => 1));
     }
   }
 ?>

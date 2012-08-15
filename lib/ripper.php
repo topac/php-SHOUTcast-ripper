@@ -26,9 +26,9 @@
       $http_streaming = new HttpStreaming($address, $port);
       $http_streaming->open();
 
-      $response_header = $http_streaming->response_header();
-      $this->icy_metaint = $response_header->icy_metaint();
-      $this->next_metadata_index = $response_header->icy_metaint();
+      $response_message = $http_streaming->response_message();
+      $this->icy_metaint = $response_message->icy_metaint();
+      $this->next_metadata_index = $response_message->icy_metaint();
 
       $this->open_mp3file(AudioFile::default_mp3file_name());
       while ($buffer = $http_streaming->read_stream())
